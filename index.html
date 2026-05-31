@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plantão Tracker</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #2c3e50;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: slideDown 0.6s ease-out;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1a5490;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            font-size: 0.95rem;
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+
+        .content-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            animation: fadeIn 0.8s ease-out 0.2s both;
+        }
+
+        .form-section {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .form-section h2 {
+            font-size: 1.2rem;
+            margin-bottom: 24px;
+            color: #1a5490;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #34495e;
+            margin-bottom: 6px;
+            letter-spacing: 0.3px;
+        }
+
+        input[type="number"],
+        input[type="date"] {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s ease;
+            background: #fafbfc;
+        }
+
+        input[type="number"]:focus,
+        input[type="date"]:focus {
+            outline: none;
+            border-color: #1a5490;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(26, 84, 144, 0.1);
+        }
+
+        .preview-section {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .preview-section h2 {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            color: #1a5490;
+            font-weight: 600;
+        }
+
+        .preview-box {
+            background: #f8f9fa;
+            border-left: 4px solid #1a5490;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            min-height: 280px;
+            margin-bottom: 24px;
+            color: #2c3e50;
+        }
+
+        .metric-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .metric-item:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            font-size: 0.85rem;
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+
+        .metric-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #2c3e50;
+            font-family: 'Courier New', monospace;
+        }
+
+        .indicator {
+            font-size: 1.2rem;
+            margin-left: 12px;
+        }
+
+        .indicator.success {
+            color: #27ae60;
+        }
+
+        .indicator.fail {
+            color: #e74c3c;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        button {
+            flex: 1;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+
+        .btn-copy {
+            background: #1a5490;
+            color: white;
+        }
+
+        .btn-copy:hover {
+            background: #0d3a6a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(26, 84, 144, 0.3);
+        }
+
+        .btn-copy:active {
+            transform: translateY(0);
+        }
+
+        .btn-pdf {
+            background: #f39c12;
+            color: white;
+        }
+
+        .btn-pdf:hover {
+            background: #d68910;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+        }
+
+        .btn-pdf:active {
+            transform: translateY(0);
+        }
+
+        .btn-reset {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-reset:hover {
+            background: #7f8c8d;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(149, 165, 166, 0.3);
+        }
+
+        .feedback {
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-align: center;
+            display: none;
+            animation: slideUp 0.4s ease-out;
+        }
+
+        .feedback.show {
+            display: block;
+        }
+
+        .feedback.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .feedback.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .meta-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .stat-box {
+            background: #f8f9fa;
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .stat-number {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #1a5490;
+            font-family: 'Courier New', monospace;
+        }
+
+        #pdfContent {
+            display: none;
+            background: white;
+            padding: 40px;
+            font-family: Arial, sans-serif;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .content-wrapper {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.8rem;
+            }
+
+            .form-section,
+            .preview-section {
+                padding: 20px;
+            }
+
+            .preview-box {
+                min-height: auto;
+                font-size: 0.85rem;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .meta-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding-top: 30px;
+            border-top: 1px solid #ecf0f1;
+            font-size: 0.85rem;
+            color: #95a5a6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Plantão Tracker</h1>
+            <p class="subtitle">Rastreamento de métricas diárias da emergência</p>
+            <p class="subtitle" style="margin-top: 4px;">Hospital Esperança Olinda</p>
+        </header>
+
+        <div class="content-wrapper">
+            <!-- Formulário -->
+            <div class="form-section">
+                <h2>Dados do Plantão</h2>
+                
+                <div class="form-group">
+                    <label for="date">Data do Plantão</label>
+                    <input type="date" id="date">
+                </div>
+
+                <div class="form-group">
+                    <label for="total">Total de Atendimentos</label>
+                    <input type="number" id="total" min="0" placeholder="Ex: 25">
+                </div>
+
+                <div class="form-group">
+                    <label for="atendidos30">Atendidos em &lt;30 minutos</label>
+                    <input type="number" id="atendidos30" min="0" placeholder="Ex: 23">
+                </div>
+
+                <div class="form-group">
+                    <label for="definidos3h">Definidos em &lt;3 horas</label>
+                    <input type="number" id="definidos3h" min="0" placeholder="Ex: 21">
+                </div>
+
+                <div class="form-group">
+                    <label for="internamentos">Solicitações de Internamento</label>
+                    <input type="number" id="internamentos" min="0" placeholder="Ex: 2">
+                </div>
+
+                <div class="button-group">
+                    <button class="btn-reset" onclick="resetForm()">Limpar</button>
+                </div>
+            </div>
+
+            <!-- Prévia e Estatísticas -->
+            <div class="preview-section">
+                <h2>Prévia da Mensagem</h2>
+                
+                <div class="meta-stats">
+                    <div class="stat-box">
+                        <div class="stat-label">% &lt;30min</div>
+                        <div class="stat-number" id="percent30">--</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">% &lt;3h</div>
+                        <div class="stat-number" id="percent3h">--</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">% Internamentos</div>
+                        <div class="stat-number" id="percentIntern">--</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-label">Metas</div>
+                        <div class="stat-number" id="metasIndicator">-/-/-</div>
+                    </div>
+                </div>
+
+                <div class="preview-box" id="preview">Preencha os dados ao lado para visualizar a mensagem...</div>
+
+                <div class="button-group">
+                    <button class="btn-copy" onclick="copyToClipboard()">📋 Copiar para WhatsApp</button>
+                    <button class="btn-pdf" onclick="generatePDF()">📄 Salvar PDF</button>
+                </div>
+
+                <div class="feedback" id="feedback"></div>
+            </div>
+        </div>
+
+        <footer>
+            Aplicativo desenvolvido pelo Dr. Felipe Feitosa - CRM-PE 24005
+        </footer>
+    </div>
+
+    <!-- Conteúdo oculto para PDF -->
+    <div id="pdfContent"></div>
+
+    <script>
+        // Definir data atual como padrão
+        document.getElementById('date').valueAsDate = new Date();
+
+        // Event listeners para inputs
+        const inputs = ['date', 'total', 'atendidos30', 'definidos3h', 'internamentos'];
+        inputs.forEach(id => {
+            document.getElementById(id).addEventListener('input', updatePreview);
+        });
+
+        function updatePreview() {
+            const date = document.getElementById('date').value;
+            const total = parseInt(document.getElementById('total').value) || 0;
+            const atendidos30 = parseInt(document.getElementById('atendidos30').value) || 0;
+            const definidos3h = parseInt(document.getElementById('definidos3h').value) || 0;
+            const internamentos = parseInt(document.getElementById('internamentos').value) || 0;
+
+            // Cálculos
+            const percent30 = total > 0 ? ((atendidos30 / total) * 100).toFixed(1) : 0;
+            const percent3h = total > 0 ? ((definidos3h / total) * 100).toFixed(1) : 0;
+            const percentIntern = total > 0 ? ((internamentos / total) * 100).toFixed(1) : 0;
+
+            // Verificar metas
+            const meta30 = percent30 >= 80;
+            const meta3h = percent3h >= 80;
+            const metaIntern = percentIntern >= 7;
+
+            // Atualizar percentuais na interface
+            document.getElementById('percent30').textContent = percent30 === 0 ? '--' : percent30 + '%';
+            document.getElementById('percent3h').textContent = percent3h === 0 ? '--' : percent3h + '%';
+            document.getElementById('percentIntern').textContent = percentIntern === 0 ? '--' : percentIntern + '%';
+
+            // Indicador de metas
+            const metasCount = [meta30, meta3h, metaIntern].filter(Boolean).length;
+            document.getElementById('metasIndicator').textContent = `${metasCount}/3`;
+
+            // Formatar data
+            let dataFormatada = '';
+            if (date) {
+                const d = new Date(date + 'T00:00:00');
+                const dias = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
+                const dia = dias[d.getDay()];
+                const opcoes = { day: '2-digit', month: '2-digit', year: 'numeric' };
+                dataFormatada = d.toLocaleDateString('pt-BR', opcoes) + ' - ' + dia;
+            }
+
+            // Gerar texto da mensagem
+            const icon30 = meta30 ? '✅' : '❌';
+            const icon3h = meta3h ? '✅' : '❌';
+            const iconIntern = metaIntern ? '✅' : '❌';
+
+            let mensagem = '';
+            if (date && total > 0) {
+                mensagem = `Plantão de ${dataFormatada}
+
+* Total de atendimentos: ${total}
+
+* Atendimentos em <30 minutos: ${atendidos30} -> ${percent30}% (meta >80%) ${icon30}
+* Definidos em até 3 h: ${definidos3h} -> ${percent3h}% (meta >80%) ${icon3h}
+* Solicitações de internamento: ${internamentos} -> ${percentIntern}% (meta ≥7%) ${iconIntern}`;
+            }
+
+            document.getElementById('preview').textContent = mensagem || 'Preencha os dados ao lado para visualizar a mensagem...';
+        }
+
+        function copyToClipboard() {
+            const preview = document.getElementById('preview').textContent;
+            
+            if (preview === 'Preencha os dados ao lado para visualizar a mensagem...') {
+                showFeedback('Por favor, preencha todos os campos primeiro.', 'error');
+                return;
+            }
+
+            navigator.clipboard.writeText(preview).then(() => {
+                showFeedback('✅ Mensagem copiada para a área de transferência!', 'success');
+            }).catch(() => {
+                showFeedback('❌ Erro ao copiar. Tente novamente.', 'error');
+            });
+        }
+
+        function generatePDF() {
+            const preview = document.getElementById('preview').textContent;
+            
+            if (preview === 'Preencha os dados ao lado para visualizar a mensagem...') {
+                showFeedback('Por favor, preencha todos os campos primeiro.', 'error');
+                return;
+            }
+
+            const htmlContent = `
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <style>
+                        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                        h1 { color: #1a5490; margin-bottom: 20px; }
+                        pre { background: #f5f5f5; padding: 20px; border-radius: 5px; white-space: pre-wrap; word-wrap: break-word; }
+                        .footer { margin-top: 30px; font-size: 12px; color: #666; text-align: center; }
+                    </style>
+                </head>
+                <body>
+                    <h1>📊 Plantão Tracker</h1>
+                    <pre>${preview}</pre>
+                    <div class="footer">
+                        <p>Gerado em: ${new Date().toLocaleString('pt-BR')}</p>
+                        <p>Dr. Felipe Feitosa Queiroz | CRM-PE 24005</p>
+                    </div>
+                </body>
+                </html>
+            `;
+
+            const element = document.createElement('div');
+            element.innerHTML = htmlContent;
+
+            const opt = {
+                margin: 10,
+                filename: `plantao-${document.getElementById('date').value}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+            };
+
+            html2pdf().set(opt).from(element).save();
+            showFeedback('✅ PDF salvo com sucesso!', 'success');
+        }
+
+        function resetForm() {
+            document.getElementById('date').valueAsDate = new Date();
+            document.getElementById('total').value = '';
+            document.getElementById('atendidos30').value = '';
+            document.getElementById('definidos3h').value = '';
+            document.getElementById('internamentos').value = '';
+            updatePreview();
+            showFeedback('Formulário limpo!', 'success');
+        }
+
+        function showFeedback(message, type) {
+            const feedback = document.getElementById('feedback');
+            feedback.textContent = message;
+            feedback.className = `feedback show ${type}`;
+            
+            setTimeout(() => {
+                feedback.classList.remove('show');
+            }, 3000);
+        }
+
+        // Atualizar prévia inicial
+        updatePreview();
+    </script>
+</body>
+</html>
