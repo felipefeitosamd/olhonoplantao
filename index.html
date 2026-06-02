@@ -355,6 +355,79 @@
             font-size: 0.85rem;
             color: #95a5a6;
         }
+
+        .mode-selector {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin: 30px 0 40px 0;
+            animation: slideDown 0.6s ease-out 0.3s both;
+        }
+
+        .mode-label {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #34495e;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 70px;
+            height: 36px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #bdc3c7;
+            transition: 0.4s;
+            border-radius: 36px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 28px;
+            width: 28px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        input:checked + .toggle-slider {
+            background-color: #f39c12;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(34px);
+        }
+
+        .mode-label.active {
+            color: #1a5490;
+            font-weight: 700;
+        }
+
+        .mode-label.inactive {
+            opacity: 0.6;
+        }
     </style>
 </head>
 <body>
@@ -364,6 +437,15 @@
             <p class="subtitle">Rastreamento de métricas diárias da emergência</p>
             <p class="subtitle" style="margin-top: 4px;">Hospital Esperança Olinda</p>
         </header>
+
+        <div class="mode-selector">
+            <span class="mode-label active" id="labelPediatria">🏥 Pediatria</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="modeToggle" onchange="toggleMode()">
+                <span class="toggle-slider"></span>
+            </label>
+            <span class="mode-label inactive" id="labelAdulto">👨‍⚕️ Adulto</span>
+        </div>
 
         <div class="content-wrapper">
             <!-- Formulário -->
@@ -386,7 +468,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="definidos3h">Definidos em &lt;3 horas</label>
+                    <label for="definidos3h" id="labelDefinidos">Definidos em &lt;3 horas</label>
                     <input type="number" id="definidos3h" min="0" placeholder="Ex: 21">
                 </div>
 
@@ -410,7 +492,7 @@
                         <div class="stat-number" id="percent30">--</div>
                     </div>
                     <div class="stat-box">
-                        <div class="stat-label">% &lt;3h</div>
+                        <div class="stat-label" id="labelStatTempo">% &lt;3h</div>
                         <div class="stat-number" id="percent3h">--</div>
                     </div>
                     <div class="stat-box">
@@ -443,6 +525,26 @@
     <div id="pdfContent"></div>
 
     <script>
+        // Configuração de modos
+        let currentMode = 'pediatria'; // 'pediatria' ou 'adulto'
+
+        const modes = {
+            pediatria: {
+                nome: 'Pediatria',
+                meta30: 80,
+                metaDefinidos: 80,
+                tempoDefinidos: 3,
+                metaInternamentos: 7
+            },
+            adulto: {
+                nome: 'Adulto',
+                meta30: 80,
+                metaDefinidos: 80,
+                tempoDefinidos: 2,
+                metaInternamentos: 15
+            }
+        };
+
         // Definir data atual como padrão
         document.getElementById('date').valueAsDate = new Date();
 
@@ -452,7 +554,37 @@
             document.getElementById(id).addEventListener('input', updatePreview);
         });
 
+        function toggleMode() {
+            const toggle = document.getElementById('modeToggle');
+            currentMode = toggle.checked ? 'adulto' : 'pediatria';
+
+            // Atualizar labels
+            const labelPediatria = document.getElementById('labelPediatria');
+            const labelAdulto = document.getElementById('labelAdulto');
+            const labelDefinidos = document.getElementById('labelDefinidos');
+            const labelStatTempo = document.getElementById('labelStatTempo');
+
+            if (currentMode === 'pediatria') {
+                labelPediatria.classList.add('active');
+                labelPediatria.classList.remove('inactive');
+                labelAdulto.classList.remove('active');
+                labelAdulto.classList.add('inactive');
+                labelDefinidos.textContent = 'Definidos em <3 horas';
+                labelStatTempo.textContent = '% <3h';
+            } else {
+                labelPediatria.classList.remove('active');
+                labelPediatria.classList.add('inactive');
+                labelAdulto.classList.add('active');
+                labelAdulto.classList.remove('inactive');
+                labelDefinidos.textContent = 'Definidos em <2 horas';
+                labelStatTempo.textContent = '% <2h';
+            }
+
+            updatePreview();
+        }
+
         function updatePreview() {
+            const mode = modes[currentMode];
             const date = document.getElementById('date').value;
             const total = parseInt(document.getElementById('total').value) || 0;
             const atendidos30 = parseInt(document.getElementById('atendidos30').value) || 0;
@@ -461,21 +593,21 @@
 
             // Cálculos
             const percent30 = total > 0 ? ((atendidos30 / total) * 100).toFixed(1) : 0;
-            const percent3h = total > 0 ? ((definidos3h / total) * 100).toFixed(1) : 0;
+            const percentDefinidos = total > 0 ? ((definidos3h / total) * 100).toFixed(1) : 0;
             const percentIntern = total > 0 ? ((internamentos / total) * 100).toFixed(1) : 0;
 
             // Verificar metas
-            const meta30 = percent30 >= 80;
-            const meta3h = percent3h >= 80;
-            const metaIntern = percentIntern >= 7;
+            const meta30 = percent30 >= mode.meta30;
+            const metaDefinidos = percentDefinidos >= mode.metaDefinidos;
+            const metaIntern = percentIntern >= mode.metaInternamentos;
 
             // Atualizar percentuais na interface
             document.getElementById('percent30').textContent = percent30 === 0 ? '--' : percent30 + '%';
-            document.getElementById('percent3h').textContent = percent3h === 0 ? '--' : percent3h + '%';
+            document.getElementById('percent3h').textContent = percentDefinidos === 0 ? '--' : percentDefinidos + '%';
             document.getElementById('percentIntern').textContent = percentIntern === 0 ? '--' : percentIntern + '%';
 
             // Indicador de metas
-            const metasCount = [meta30, meta3h, metaIntern].filter(Boolean).length;
+            const metasCount = [meta30, metaDefinidos, metaIntern].filter(Boolean).length;
             document.getElementById('metasIndicator').textContent = `${metasCount}/3`;
 
             // Formatar data
@@ -490,18 +622,21 @@
 
             // Gerar texto da mensagem
             const icon30 = meta30 ? '✅' : '❌';
-            const icon3h = meta3h ? '✅' : '❌';
+            const iconDefinidos = metaDefinidos ? '✅' : '❌';
             const iconIntern = metaIntern ? '✅' : '❌';
 
             let mensagem = '';
             if (date && total > 0) {
+                const tempoText = mode.tempoDefinidos === 3 ? '3' : '2';
+                const metaInternText = mode.metaInternamentos === 7 ? '≥7%' : '≥15%';
+                
                 mensagem = `Plantão de ${dataFormatada}
 
 * Total de atendimentos: ${total}
 
 * Atendimentos em <30 minutos: ${atendidos30} -> ${percent30}% (meta >80%) ${icon30}
-* Definidos em até 3 h: ${definidos3h} -> ${percent3h}% (meta >80%) ${icon3h}
-* Solicitações de internamento: ${internamentos} -> ${percentIntern}% (meta ≥7%) ${iconIntern}`;
+* Definidos em até ${tempoText} h: ${definidos3h} -> ${percentDefinidos}% (meta >80%) ${iconDefinidos}
+* Solicitações de internamento: ${internamentos} -> ${percentIntern}% (meta ${metaInternText}) ${iconIntern}`;
             }
 
             document.getElementById('preview').textContent = mensagem || 'Preencha os dados ao lado para visualizar a mensagem...';
